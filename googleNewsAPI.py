@@ -1,6 +1,8 @@
 
 import requests
 import json
+from newspaper import Article
+# from pyspark import SparkConf, SparkContext
 
 url = ('https://newsapi.org/v2/everything?'
        'q=Apple&'
@@ -11,9 +13,47 @@ url = ('https://newsapi.org/v2/everything?'
 
 response = requests.get(url)
 
-#print(response.json())
-
 data = response.json()
 
-with open("/home/akshay/Documents/gNews1.txt", 'w') as outfile:
-    json.dump(data, outfile)
+# print(data)
+
+jsonString = json.dumps(data)
+jsontoPy = json.loads(jsonString)
+
+# conf = SparkConf().setAppName("projectNews").setMaster("local[2]")
+# sc = SparkContext(conf)
+
+# mapper = jsontoPy.map()
+# print(jsontoPy['articles'][100]['url'])
+
+dictUrl = {}
+articleId = 1
+for i in jsontoPy['articles']:
+    articleUrl = i.get('url')
+    dictUrl[articleId] = articleUrl
+    articleId += 1
+
+# print(dictUrl)
+
+
+article = Article(articleUrl)
+
+article.download()
+article.parse()
+print(article.text)
+articleText = article.text
+print(articleText)
+
+# using geoparser for location extraction from the articles
+# url2 = 'https://geoparser.io/api/geoparser'
+# headers = {'Authorization': 'apiKey '}
+# data2 = {'inputText': articleText}
+# response2 = requests.post(url2, headers=headers, data=data2)
+# print(json.dumps(response2.json(), indent=4))
+
+
+
+
+# with open("/home/akshay/Documents/gNews.txt", 'w') as outfile:
+#   json.dump(data, outfile)
+
