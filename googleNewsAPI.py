@@ -40,9 +40,8 @@ article = Article(articleUrl)
 
 article.download()
 article.parse()
-print(article.text)
 articleText = article.text
-print(articleText)
+# print(articleText)
 
 # using geoparser for location extraction from the articles
 url2 = 'https://geoparser.io/api/geoparser'
