@@ -45,11 +45,11 @@ articleText = article.text
 print(articleText)
 
 # using geoparser for location extraction from the articles
-# url2 = 'https://geoparser.io/api/geoparser'
-# headers = {'Authorization': 'apiKey '}
-# data2 = {'inputText': articleText}
-# response2 = requests.post(url2, headers=headers, data=data2)
-# print(json.dumps(response2.json(), indent=4))
+url2 = 'https://geoparser.io/api/geoparser'
+headers = {'Authorization': 'apiKey 27103686864861756'}
+data2 = {'inputText': articleText}
+response2 = requests.post(url2, headers=headers, data=data2)
+print(json.dumps(response2.json(), indent=4))
 
 
 
