@@ -4,6 +4,7 @@ import json
 from newspaper import Article
 # from pyspark import SparkConf, SparkContext
 
+# using Google News API for extracting articles
 url = ('https://newsapi.org/v2/everything?'
        'q=Apple&'
        'from=2017-11-19&'
@@ -43,7 +44,7 @@ article.parse()
 articleText = article.text
 # print(articleText)
 
-# using geoparser for location extraction from the articles
+# using Geoparser.io for location extraction from the articles
 url2 = 'https://geoparser.io/api/geoparser'
 headers = {'Authorization': 'apiKey 27103686864861756'}
 data2 = {'inputText': articleText}
