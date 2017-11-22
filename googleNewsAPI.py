@@ -48,7 +48,6 @@ for i in dictUrl.keys():
     response2 = requests.post(url2, headers=headers, data=data2)
     jsonData2 = json.dumps(response2.json(), indent=2)
     # print(jsonData2)
-
     jsontoPy2 = json.loads(jsonData2)
     
     for j in jsontoPy2['features']:
