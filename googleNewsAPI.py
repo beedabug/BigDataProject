@@ -2,7 +2,7 @@
 import requests
 import json
 from newspaper import Article
-# from pyspark import SparkConf, SparkContext
+from collections import defaultdict
 
 # using Google News API for collecting articles
 url = ('https://newsapi.org/v2/everything?'
@@ -18,13 +18,8 @@ data = response.json()
 
 # print(data)
 
-jsonString = json.dumps(data)
-jsontoPy = json.loads(jsonString)
-
-# conf = SparkConf().setAppName("projectNews").setMaster("local[2]")
-# sc = SparkContext(conf)
-
-# mapper = jsontoPy.map()
+x1 = json.dumps(data)
+jsontoPy = json.loads(x1)
 
 dictUrl = {}
 articleId = 1
@@ -36,10 +31,11 @@ for i in jsontoPy['articles']:
 # print(dictUrl[1])
 # print(articleUrl)
 
+dictXY = {}
+dictXY = defaultdict(list)
 for i in dictUrl.keys():
-    # print(dictUrl[i])
+    # print(dictUrl[i]+" ",i)
     article = Article(dictUrl[i])
-
     article.download()
     article.parse()
     articleText = article.text
@@ -50,8 +46,17 @@ for i in dictUrl.keys():
     headers = {'Authorization': 'apiKey 27103686864861756'}
     data2 = {'inputText': articleText}
     response2 = requests.post(url2, headers=headers, data=data2)
-    location = json.dumps(response2.json(), indent=2)
-    print(location)
+    jsonData2 = json.dumps(response2.json(), indent=2)
+    # print(jsonData2)
+
+    jsontoPy2 = json.loads(jsonData2)
+    
+    for j in jsontoPy2['features']:
+        geoCoord = j.get('geometry').get('coordinates')
+        # print(geoCoord)
+        dictXY[i].append(geoCoord)
+
+print(dictXY)
 
 # with open("/home/akshay/Documents/gNews.txt", 'w') as outfile:
 #     json.dump(location, outfile)
