@@ -3,6 +3,7 @@ import requests
 import json
 from newspaper import Article
 from collections import defaultdict
+from pyspark import SparkContext, SparkConf
 
 # using Google News API for collecting articles
 url = ('https://newsapi.org/v2/everything?'
@@ -55,7 +56,20 @@ for i in dictUrl.keys():
         # print(geoCoord)
         dictXY[i].append(geoCoord)
 
-print(dictXY)
+# print(dictXY)
+
+a = sc.parallelize(dictXY) # generate rdd of keys
+
+def func(key):
+  l = []  # empty list
+  for i in range(len(dictXY.get(key))):
+    l.append({key: dictXY.get(key)[i]})
+  return l
+  
+b = a.flatMap(func)
+
+b.take(20)
+
 
 # with open("/home/akshay/Documents/gNews.txt", 'w') as outfile:
 #     json.dump(location, outfile)
