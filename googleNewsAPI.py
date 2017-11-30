@@ -1,9 +1,10 @@
-
 import requests
 import json
+import numpy as np
 from newspaper import Article
 from collections import defaultdict
 from pyspark import SparkContext, SparkConf
+from pyspark.ml.clustering import KMeans
 
 # using Google News API for collecting articles
 url = ('https://newsapi.org/v2/everything?'
@@ -72,6 +73,16 @@ def func(key):
 b = a.flatMap(func)
 
 b.take(20)
+
+c = b.collect()
+
+mat = []
+
+for i in c:
+    for j in i.values():
+        mat.append(j)
+
+print(mat)
 
 
 # with open("/home/akshay/Documents/gNews.txt", 'w') as outfile:
