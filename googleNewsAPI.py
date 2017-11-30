@@ -58,6 +58,9 @@ for i in dictUrl.keys():
 
 # print(dictXY)
 
+conf = SparkConf().setMaster("local").setAppName("dict2rdd")
+sc = SparkContext(conf=conf)
+
 a = sc.parallelize(dictXY) # generate rdd of keys
 
 def func(key):
