@@ -45,12 +45,14 @@ lat =[]
 lng =[]
 gmap = gmplot.GoogleMapPlotter(0, 0, 2,apikey=' AIzaSyDLddgAEB0qY8PLEHr-DF-YXPqoK3HdF7E ')
 
+text = {}
 for i in dictUrl.keys():
     # print(dictUrl[i]+" ",i)
     article = Article(dictUrl[i])
     article.download()
     article.parse()
     articleText = article.text
+    text[i] = article.text  # save article text
     # print(articleText)
 
     # using Geoparser.io for location extraction from the articles
@@ -72,13 +74,6 @@ for i in dictUrl.keys():
 gmap.plot(lat, lng, 'cornflowerblue', edge_width=10)
 gmap.draw('map.html')
 # print(dictXY)
-
-text = {}
-for i in dictUrl.keys():
-    article = Article(dictUrl[i])
-    article.download()
-    article.parse()
-    text[i] = article.text  # save article text
 
 articles = sc.parallelize(text)  # create rdd
 words = articles.map(lambda x: {x: text[x].split(" ")})  
@@ -110,6 +105,16 @@ print(transformed.rdd.take(10))
 rows = transformed.rdd
 predictedRDD = rows.map(lambda x: (x.prediction, [x.features[0], x.features[1]]))
 print(predictedRDD.take(10))
+centers = model.clusterCenters()
+print("Cluster Centers: ")
+for center in centers:
+    print(center)
+centers = model.clusterCenters()
+print("Cluster Centers: ")
+for center in centers:
+    print(center)
+
+
 
 # with open("/home/akshay/Documents/gNews.txt", 'w') as outfile:
 #     json.dump(location, outfile)
