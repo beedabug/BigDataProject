@@ -1,9 +1,14 @@
-
 import requests
 import json
+import numpy as np
 from newspaper import Article
 from collections import defaultdict
 from pyspark import SparkContext, SparkConf
+from pyspark.ml.clustering import KMeans
+import gmplot
+
+conf = SparkConf().setMaster("local").setAppName("project")
+sc = SparkContext(conf=conf)
 
 # using Google News API for collecting articles
 url = ('https://newsapi.org/v2/everything?'
@@ -34,6 +39,10 @@ for i in jsontoPy['articles']:
 
 dictXY = {}
 dictXY = defaultdict(list)
+lat =[]
+lng =[]
+gmap = gmplot.GoogleMapPlotter(0, 0, 2,apikey=' AIzaSyDLddgAEB0qY8PLEHr-DF-YXPqoK3HdF7E ')
+
 for i in dictUrl.keys():
     # print(dictUrl[i]+" ",i)
     article = Article(dictUrl[i])
@@ -54,21 +63,41 @@ for i in dictUrl.keys():
     for j in jsontoPy2['features']:
         geoCoord = j.get('geometry').get('coordinates')
         # print(geoCoord)
+        lat.append(geoCoord[0])
+        lng.append(geoCoord[1])
         dictXY[i].append(geoCoord)
-
+       
+gmap.plot(lat, lng, 'cornflowerblue', edge_width=10)
+gmap.draw('map.html')
 # print(dictXY)
 
-a = sc.parallelize(dictXY) # generate rdd of keys
+text = {}
+for i in dictUrl.keys():
+    article = Article(dictUrl[i])
+    article.download()
+    article.parse()
+    text[i] = article.text  # save article text
 
-def func(key):
+articles = sc.parallelize(text)  # create rdd
+words = articles.map(lambda x: {x: text[x].split(" ")})  
+# words = [{1: ['Postmates,', 'the', 'get-anything-delivered', 'service,', ..., 'word_n']}, {2: ['word1', 'word2', ..., 'word_n']}]   
+
+def func(key, d):
   l = []  # empty list
-  for i in range(len(dictXY.get(key))):
-    l.append({key: dictXY.get(key)[i]})
+  for i in range(len(d.get(key))):
+    l.append({key: d.get(key)[i]})
   return l
-  
-b = a.flatMap(func)
 
-b.take(20)
+a = sc.parallelize(dictXY) # generate rdd of keys  
+b = a.flatMap(lambda x: func(x, dictXY))
+c = b.collect()
+
+mat = []  # create matrix for latitude/longitude coordinates
+for i in c:
+    for j in i.values():
+        mat.append(j)
+
+print(mat)
 
 
 # with open("/home/akshay/Documents/gNews.txt", 'w') as outfile:
