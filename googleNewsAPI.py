@@ -5,6 +5,7 @@ from newspaper import Article
 from collections import defaultdict
 from pyspark import SparkContext, SparkConf
 from pyspark.ml.clustering import KMeans
+import gmplot
 
 # using Google News API for collecting articles
 url = ('https://newsapi.org/v2/everything?'
@@ -35,6 +36,10 @@ for i in jsontoPy['articles']:
 
 dictXY = {}
 dictXY = defaultdict(list)
+lat =[]
+lng =[]
+gmap = gmplot.GoogleMapPlotter(0, 0, 2,apikey=' AIzaSyDLddgAEB0qY8PLEHr-DF-YXPqoK3HdF7E ')
+
 for i in dictUrl.keys():
     # print(dictUrl[i]+" ",i)
     article = Article(dictUrl[i])
@@ -55,8 +60,12 @@ for i in dictUrl.keys():
     for j in jsontoPy2['features']:
         geoCoord = j.get('geometry').get('coordinates')
         # print(geoCoord)
+        lat.append(geoCoord[0])
+        lng.append(geoCoord[1])
         dictXY[i].append(geoCoord)
 
+gmap.plot(lat, lng, 'cornflowerblue', edge_width=10)
+gmap.draw('map.html')
 # print(dictXY)
 
 conf = SparkConf().setMaster("local").setAppName("dict2rdd")
