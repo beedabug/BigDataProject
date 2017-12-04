@@ -99,6 +99,15 @@ for i in c:
 
 print(mat)
 
+data = [(Vectors.dense(x),) for x in c.collect()]
+d = spark.createDataFrame(data, ["features"])
+kmeans = KMeans(k=10, seed=1)
+model = kmeans.fit(d)
+transformed = model.transform(d).select("features", "prediction")
+print(transformed.rdd.take(10))
+rows = transformed.rdd
+predictedRDD = rows.map(lambda x: (x.prediction, [x.features[0], x.features[1]]))
+print(predictedRDD.take(10))
 
 # with open("/home/akshay/Documents/gNews.txt", 'w') as outfile:
 #     json.dump(location, outfile)
