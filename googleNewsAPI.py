@@ -7,6 +7,9 @@ from pyspark import SparkContext, SparkConf
 from pyspark.ml.clustering import KMeans
 import gmplot
 
+conf = SparkConf().setMaster("local").setAppName("project")
+sc = SparkContext(conf=conf)
+
 # using Google News API for collecting articles
 url = ('https://newsapi.org/v2/everything?'
        'q=Apple&'
@@ -67,9 +70,6 @@ for i in dictUrl.keys():
 gmap.plot(lat, lng, 'cornflowerblue', edge_width=10)
 gmap.draw('map.html')
 # print(dictXY)
-
-conf = SparkConf().setMaster("local").setAppName("dict2rdd")
-sc = SparkContext(conf=conf)
 
 a = sc.parallelize(dictXY) # generate rdd of keys
 
