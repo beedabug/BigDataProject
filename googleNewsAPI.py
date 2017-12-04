@@ -73,13 +73,13 @@ gmap.draw('map.html')
 
 a = sc.parallelize(dictXY) # generate rdd of keys
 
-def func(key):
+def func(key, d):
   l = []  # empty list
-  for i in range(len(dictXY.get(key))):
-    l.append({key: dictXY.get(key)[i]})
+  for i in range(len(d.get(key))):
+    l.append({key: d.get(key)[i]})
   return l
   
-b = a.flatMap(func)
+b = a.flatMap(lambda x: func(x, dictXY))
 
 b.take(20)
 
