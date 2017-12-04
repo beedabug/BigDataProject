@@ -91,6 +91,10 @@ print(transformed.rdd.take(10))
 rows = transformed.rdd
 predictedRDD = rows.map(lambda x: (x.prediction, [x.features[0], x.features[1]]))
 print(predictedRDD.take(10))
+centers = model.clusterCenters()
+print("Cluster Centers: ")
+for center in centers:
+    print(center)
 
 # with open("/home/akshay/Documents/gNews.txt", 'w') as outfile:
 #     json.dump(location, outfile)
