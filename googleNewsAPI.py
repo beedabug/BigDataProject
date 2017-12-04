@@ -114,6 +114,22 @@ print("Cluster Centers: ")
 for center in centers:
     print(center)
 
+begin = 'https://maps.googleapis.com/maps/api/geocode/json?latlng='
+end = '&key=AIzaSyCjn7gFXea2AhmAae51wIwseBZY4CKmscA'
+
+responses = []
+for c in centers:
+    url = begin + str(c[0]) + ',' + str(c[1]) + end
+    responses.append(requests.post(url).json())
+
+cluster_locations = []
+for i in range(len(responses)):
+    jsonString = json.dumps(responses[i])  # convert json object to string
+    jsontoPy = json.loads(jsonString)  # convert string to dictionary object
+    cluster_locations.append({i+1: jsontoPy['results'][0]['formatted_address']})
+
+# print(centers)
+
 
 
 # with open("/home/akshay/Documents/gNews.txt", 'w') as outfile:
