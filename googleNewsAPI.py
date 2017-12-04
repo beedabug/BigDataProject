@@ -66,27 +66,33 @@ for i in dictUrl.keys():
         lat.append(geoCoord[0])
         lng.append(geoCoord[1])
         dictXY[i].append(geoCoord)
-
+       
 gmap.plot(lat, lng, 'cornflowerblue', edge_width=10)
 gmap.draw('map.html')
 # print(dictXY)
 
-a = sc.parallelize(dictXY) # generate rdd of keys
+text = {}
+for i in dictUrl.keys():
+    article = Article(dictUrl[i])
+    article.download()
+    article.parse()
+    text[i] = article.text  # save article text
+
+articles = sc.parallelize(text)  # create rdd
+words = articles.map(lambda x: {x: text[x].split(" ")})  
+# words = [{1: ['Postmates,', 'the', 'get-anything-delivered', 'service,', ..., 'word_n']}, {2: ['word1', 'word2', ..., 'word_n']}]   
 
 def func(key, d):
   l = []  # empty list
   for i in range(len(d.get(key))):
     l.append({key: d.get(key)[i]})
   return l
-  
+
+a = sc.parallelize(dictXY) # generate rdd of keys  
 b = a.flatMap(lambda x: func(x, dictXY))
-
-b.take(20)
-
 c = b.collect()
 
-mat = []
-
+mat = []  # create matrix for latitude/longitude coordinates
 for i in c:
     for j in i.values():
         mat.append(j)
