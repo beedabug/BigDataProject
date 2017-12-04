@@ -128,9 +128,7 @@ for i in range(len(responses)):
     jsontoPy = json.loads(jsonString)  # convert string to dictionary object
     cluster_locations.append({i+1: jsontoPy['results'][0]['formatted_address']})
 
-# print(centers)
-
-
+# print(cluster_locations)
 
 # with open("/home/akshay/Documents/gNews.txt", 'w') as outfile:
 #     json.dump(location, outfile)
