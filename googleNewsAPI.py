@@ -1,16 +1,19 @@
-import requests
 import json
-import numpy as np
-from newspaper import Article
 from collections import defaultdict
+
+import gmplot
+import requests
+from newspaper import Article
 from pyspark import SparkContext, SparkConf
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.linalg import Vectors
 from pyspark.sql import SparkSession
-import gmplot
 
 conf = SparkConf().setMaster("local").setAppName("project")
 sc = SparkContext(conf=conf)
+spark = SparkSession \
+    .builder \
+    .getOrCreate()
 
 # using Google News API for collecting articles
 url = ('https://newsapi.org/v2/everything?'
@@ -67,8 +70,8 @@ for i in dictUrl.keys():
     for j in jsontoPy2['features']:
         geoCoord = j.get('geometry').get('coordinates')
         # print(geoCoord)
-        lat.append(geoCoord[0])
-        lng.append(geoCoord[1])
+        lat.append(geoCoord[1])
+        lng.append(geoCoord[0])
         dictXY[i].append(geoCoord)
        
 gmap.plot(lat, lng, 'cornflowerblue', edge_width=10)
@@ -96,7 +99,7 @@ for i in c:
 
 print(mat)
 
-data = [(Vectors.dense(x),) for x in c.collect()]
+data = [(Vectors.dense(x),) for x in mat]
 d = spark.createDataFrame(data, ["features"])
 kmeans = KMeans(k=10, seed=1)
 model = kmeans.fit(d)
