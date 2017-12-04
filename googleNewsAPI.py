@@ -5,6 +5,8 @@ from newspaper import Article
 from collections import defaultdict
 from pyspark import SparkContext, SparkConf
 from pyspark.ml.clustering import KMeans
+from pyspark.ml.linalg import Vectors
+from pyspark.sql import SparkSession
 import gmplot
 
 conf = SparkConf().setMaster("local").setAppName("project")
