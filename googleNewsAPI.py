@@ -9,6 +9,7 @@ from pyspark.ml.clustering import KMeans
 from pyspark.ml.linalg import Vectors
 from pyspark.sql import SparkSession
 
+# setting up Spark Context
 conf = SparkConf().setMaster("local").setAppName("project")
 sc = SparkContext(conf=conf)
 spark = SparkSession \
@@ -29,9 +30,11 @@ data = response.json()
 
 # print(data)
 
+# json to python dict 
 x1 = json.dumps(data)
 jsontoPy = json.loads(x1)
 
+# extract the url from the articles
 dictUrl = {}
 articleId = 1
 for i in jsontoPy['articles']:
@@ -46,6 +49,8 @@ dictXY = {}
 dictXY = defaultdict(list)
 lat =[]
 lng =[]
+
+# using Google Map API for mapping the coordinates
 gmap = gmplot.GoogleMapPlotter(0, 0, 2,apikey=' AIzaSyDLddgAEB0qY8PLEHr-DF-YXPqoK3HdF7E ')
 
 text = {}
