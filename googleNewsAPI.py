@@ -67,17 +67,10 @@ for i in dictUrl.keys():
     article.download()
     article.parse()
     articleText = article.text
-    buf = io.StringIO(articleText)
-    a = ""
-    for line in buf.readlines():
-        a += " ".join([word for word in line.lower().translate(str.maketrans('', '', string.punctuation)).split()
-                       if word not in stopwords.words('english')])
-        a += " "
-    print(i, a)
-    print(i, articleText)
     if len(articleText) < 10000:
+        a = " ".join([word for word in articleText.lower().translate(str.maketrans('', '', string.punctuation)).split()
+                           if word not in stopwords.words('english')])
         text[id] = a  # save article text
-        id += 1
         # print(articleText)
 
         # using Geoparser.io for location extraction from the articles
@@ -94,9 +87,10 @@ for i in dictUrl.keys():
             # print(geoCoord)
             lat.append(geoCoord[1])
             lng.append(geoCoord[0])
-            dictXY[i].append(geoCoord)
+            dictXY[id].append(geoCoord)
             coorString = str(geoCoord[0]) + ',' + str(geoCoord[1])
-            dictCoor[coorString].append(i)
+            dictCoor[coorString].append(id)
+        id += 1
        
 gmap.plot(lat, lng, 'cornflowerblue', edge_width=10)
 gmap.draw('map.html')
