@@ -1,15 +1,16 @@
 import json
+import string
 from collections import defaultdict
 
 import gmplot
+import nltk
 import requests
 from newspaper import Article
 from pyspark import SparkContext, SparkConf
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.linalg import Vectors
 from pyspark.sql import SparkSession
-import nltk
-import string
+
 nltk.download('stopwords')
 from nltk.corpus import stopwords
 import io
@@ -50,8 +51,8 @@ for i in jsontoPy['articles']:
 # print(dictUrl[1])
 # print(articleUrl)
 
-dictXY = {}
 dictXY = defaultdict(list)
+dictCoor = defaultdict(list)
 lat =[]
 lng =[]
 
@@ -72,7 +73,9 @@ for i in dictUrl.keys():
         a += " ".join([word for word in line.lower().translate(str.maketrans('', '', string.punctuation)).split()
                        if word not in stopwords.words('english')])
         a += " "
-    if (len(a) < 10000):
+    print(i, a)
+    print(i, articleText)
+    if len(articleText) < 10000:
         text[id] = a  # save article text
         id += 1
         # print(articleText)
@@ -80,7 +83,7 @@ for i in dictUrl.keys():
         # using Geoparser.io for location extraction from the articles
         url2 = 'https://geoparser.io/api/geoparser'
         headers = {'Authorization': 'apiKey 27103686864861756'}
-        data2 = {'inputText': a}
+        data2 = {'inputText': articleText}
         response2 = requests.post(url2, headers=headers, data=data2)
         jsonData2 = json.dumps(response2.json(), indent=2)
         # print(jsonData2)
@@ -92,6 +95,8 @@ for i in dictUrl.keys():
             lat.append(geoCoord[1])
             lng.append(geoCoord[0])
             dictXY[i].append(geoCoord)
+            coorString = str(geoCoord[0]) + ',' + str(geoCoord[1])
+            dictCoor[coorString].append(i)
        
 gmap.plot(lat, lng, 'cornflowerblue', edge_width=10)
 gmap.draw('map.html')
@@ -127,6 +132,9 @@ print(transformed.rdd.take(10))
 rows = transformed.rdd
 predictedRDD = rows.map(lambda x: (x.prediction, [x.features[0], x.features[1]]))
 print(predictedRDD.take(10))
+clustersWithArticles = rows.map(lambda x: (x.prediction, dictCoor.get(str(x.features[0]) + ',' + str(x.features[1])))) \
+    .reduceByKey(lambda x, y: x + [e for e in y if e not in x])
+print(clustersWithArticles.take(10))
 centers = model.clusterCenters()
 print("Cluster Centers: ")
 for center in centers:
@@ -141,7 +149,7 @@ end = '&key=AIzaSyCjn7gFXea2AhmAae51wIwseBZY4CKmscA'
 
 responses = []
 for c in centers:
-    url = begin + str(c[0]) + ',' + str(c[1]) + end
+    url = begin + str(c[1]) + ',' + str(c[0]) + end
     responses.append(requests.post(url).json())
 
 cluster_locations = []
