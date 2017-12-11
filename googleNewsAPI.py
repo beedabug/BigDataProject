@@ -8,6 +8,11 @@ from pyspark import SparkContext, SparkConf
 from pyspark.ml.clustering import KMeans
 from pyspark.ml.linalg import Vectors
 from pyspark.sql import SparkSession
+import nltk
+import string
+nltk.download('stopwords')
+from nltk.corpus import stopwords
+import io
 
 # setting up Spark Context
 conf = SparkConf().setMaster("local").setAppName("project")
@@ -60,24 +65,32 @@ for i in dictUrl.keys():
     article.download()
     article.parse()
     articleText = article.text
-    text[i] = article.text  # save article text
-    # print(articleText)
+    buf = io.StringIO(articleText)
+    a = ""
+    for line in buf.readlines():
+        a += " ".join([word for word in line.lower().translate(str.maketrans('', '', string.punctuation)).split()
+                       if word not in stopwords.words('english')])
+        a += " "
+    if (len(a) < 10000):
+        text[article_id] = a  # save article text
+        article_id += 1
+        # print(articleText)
 
-    # using Geoparser.io for location extraction from the articles
-    url2 = 'https://geoparser.io/api/geoparser'
-    headers = {'Authorization': 'apiKey 27103686864861756'}
-    data2 = {'inputText': articleText}
-    response2 = requests.post(url2, headers=headers, data=data2)
-    jsonData2 = json.dumps(response2.json(), indent=2)
-    # print(jsonData2)
-    jsontoPy2 = json.loads(jsonData2)
-    
-    for j in jsontoPy2['features']:
-        geoCoord = j.get('geometry').get('coordinates')
-        # print(geoCoord)
-        lat.append(geoCoord[1])
-        lng.append(geoCoord[0])
-        dictXY[i].append(geoCoord)
+        # using Geoparser.io for location extraction from the articles
+        url2 = 'https://geoparser.io/api/geoparser'
+        headers = {'Authorization': 'apiKey 27103686864861756'}
+        data2 = {'inputText': a}
+        response2 = requests.post(url2, headers=headers, data=data2)
+        jsonData2 = json.dumps(response2.json(), indent=2)
+        # print(jsonData2)
+        jsontoPy2 = json.loads(jsonData2)
+
+        for j in jsontoPy2['features']:
+            geoCoord = j.get('geometry').get('coordinates')
+            # print(geoCoord)
+            lat.append(geoCoord[1])
+            lng.append(geoCoord[0])
+            dictXY[i].append(geoCoord)
        
 gmap.plot(lat, lng, 'cornflowerblue', edge_width=10)
 gmap.draw('map.html')
@@ -138,5 +151,10 @@ for i in range(len(responses)):
 
 # print(cluster_locations)
 
-# with open("/home/akshay/Documents/gNews.txt", 'w') as outfile:
-#     json.dump(location, outfile)
+predictedRDD.coalesce(1).saveAsTextFile("result.txt")
+
+text_file = sc.textFile("result.txt")
+counts = text_file.flatMap(lambda line: line.split(" ")) \
+             .map(lambda word: (word, 1)) \
+             .reduceByKey(lambda a, b: a + b)
+counts.saveAsTextFile("count.txt")
