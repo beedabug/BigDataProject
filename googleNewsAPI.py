@@ -59,6 +59,7 @@ lng =[]
 gmap = gmplot.GoogleMapPlotter(0, 0, 2,apikey=' AIzaSyDLddgAEB0qY8PLEHr-DF-YXPqoK3HdF7E ')
 
 text = {}
+id = 0
 for i in dictUrl.keys():
     # print(dictUrl[i]+" ",i)
     article = Article(dictUrl[i])
@@ -72,8 +73,8 @@ for i in dictUrl.keys():
                        if word not in stopwords.words('english')])
         a += " "
     if (len(a) < 10000):
-        text[article_id] = a  # save article text
-        article_id += 1
+        text[id] = a  # save article text
+        id += 1
         # print(articleText)
 
         # using Geoparser.io for location extraction from the articles
