@@ -2,7 +2,7 @@ import json
 import string
 from collections import defaultdict
 
-import gmplot
+# import gmplot
 import nltk
 import requests
 from newspaper import Article
@@ -13,7 +13,6 @@ from pyspark.sql import SparkSession
 
 nltk.download('stopwords')
 from nltk.corpus import stopwords
-import io
 
 # setting up Spark Context
 conf = SparkConf().setMaster("local").setAppName("project")
@@ -53,11 +52,6 @@ for i in jsontoPy['articles']:
 
 dictXY = defaultdict(list)
 dictCoor = defaultdict(list)
-lat =[]
-lng =[]
-
-# using Google Map API for mapping the coordinates
-gmap = gmplot.GoogleMapPlotter(0, 0, 2,apikey=' AIzaSyDLddgAEB0qY8PLEHr-DF-YXPqoK3HdF7E ')
 
 text = {}
 id = 0
@@ -69,7 +63,7 @@ for i in dictUrl.keys():
     articleText = article.text
     if len(articleText) < 10000:
         a = " ".join([word for word in articleText.lower().translate(str.maketrans('', '', string.punctuation)).split()
-                           if word not in stopwords.words('english')])
+                      if word not in stopwords.words('english')])
         text[id] = a  # save article text
         # print(articleText)
 
@@ -85,28 +79,30 @@ for i in dictUrl.keys():
         for j in jsontoPy2['features']:
             geoCoord = j.get('geometry').get('coordinates')
             # print(geoCoord)
-            lat.append(geoCoord[1])
-            lng.append(geoCoord[0])
+            # lat.append(geoCoord[1])
+            # lng.append(geoCoord[0])
             dictXY[id].append(geoCoord)
             coorString = str(geoCoord[0]) + ',' + str(geoCoord[1])
             dictCoor[coorString].append(id)
         id += 1
-       
-gmap.plot(lat, lng, 'cornflowerblue', edge_width=10)
-gmap.draw('map.html')
+
+
 # print(dictXY)
 
 articles = sc.parallelize(text)  # create rdd
-words = articles.map(lambda x: {x: text[x].split(" ")})  
+words = articles.map(lambda x: {x: text[x].split(" ")})
+
+
 # words = [{1: ['Postmates,', 'the', 'get-anything-delivered', 'service,', ..., 'word_n']}, {2: ['word1', 'word2', ..., 'word_n']}]   
 
 def func(key, d):
-  l = []  # empty list
-  for i in range(len(d.get(key))):
-    l.append({key: d.get(key)[i]})
-  return l
+    l = []  # empty list
+    for i in range(len(d.get(key))):
+        l.append({key: d.get(key)[i]})
+    return l
 
-a = sc.parallelize(dictXY) # generate rdd of keys  
+
+a = sc.parallelize(dictXY)  # generate rdd of keys
 b = a.flatMap(lambda x: func(x, dictXY))
 c = b.collect()
 
@@ -115,7 +111,7 @@ for i in c:
     for j in i.values():
         mat.append(j)
 
-print(mat)
+# print(mat)
 
 data = [(Vectors.dense(x),) for x in mat]
 d = spark.createDataFrame(data, ["features"])
@@ -124,40 +120,77 @@ model = kmeans.fit(d)
 transformed = model.transform(d).select("features", "prediction")
 print(transformed.rdd.take(10))
 rows = transformed.rdd
-predictedRDD = rows.map(lambda x: (x.prediction, [x.features[0], x.features[1]]))
-print(predictedRDD.take(10))
 clustersWithArticles = rows.map(lambda x: (x.prediction, dictCoor.get(str(x.features[0]) + ',' + str(x.features[1])))) \
     .reduceByKey(lambda x, y: x + [e for e in y if e not in x])
 print(clustersWithArticles.take(10))
+
+
+def get_article_text(article_ids):
+    article_text = ''
+    for article_id in article_ids:
+        article_text = article_text + text.get(article_id)
+    return article_text
+
+
+clustersWithText = clustersWithArticles.map(lambda x: (x[0], get_article_text(x[1])))
+print(clustersWithText.take(2))
+
+
+def get_top_ten_words(lines):
+    line_words = lines.split(" ")
+    words_rdd = sc.parallelize(line_words)
+    counts = words_rdd.flatMap(lambda line: line.split(" ")) \
+        .map(lambda word: (word, 1)) \
+        .reduceByKey(lambda a, b: a + b) \
+        .sortBy(lambda a: a[1], ascending=False)
+    return counts.map(lambda a: a[0]).take(10)
+
+
+clusterText = clustersWithText.map(lambda x: x[1]).collect()
+print(clusterText)
+top10Words = []
+for r in clusterText:
+    top10Words.append(get_top_ten_words(r))
+# print(top10Words)
+lat = []
+lng = []
+
 centers = model.clusterCenters()
 print("Cluster Centers: ")
 for center in centers:
-    print(center)
-centers = model.clusterCenters()
-print("Cluster Centers: ")
-for center in centers:
+    lat.append(center[1])
+    lng.append(center[0])
     print(center)
 
-begin = 'https://maps.googleapis.com/maps/api/geocode/json?latlng='
-end = '&key=AIzaSyCjn7gFXea2AhmAae51wIwseBZY4CKmscA'
+clusterRDD = clustersWithText.map(lambda x: (centers[x[0]][1], centers[x[0]][0], top10Words[x[0]]))
+print(clusterRDD.take(1))
+clusterRDD.saveAsTextFile("clusters.txt")
 
-responses = []
-for c in centers:
-    url = begin + str(c[1]) + ',' + str(c[0]) + end
-    responses.append(requests.post(url).json())
 
-cluster_locations = []
-for i in range(len(responses)):
-    jsonString = json.dumps(responses[i])  # convert json object to string
-    jsontoPy = json.loads(jsonString)  # convert string to dictionary object
-    cluster_locations.append({i+1: jsontoPy['results'][0]['formatted_address']})
+# using Google Map API for mapping the coordinates
+# gmap = gmplot.GoogleMapPlotter(0, 0, 2, apikey=' AIzaSyDLddgAEB0qY8PLEHr-DF-YXPqoK3HdF7E ')
+# gmap.scatter(lat,lng,'#3B0B39',marker=True)
+# gmap.draw('map.html')
+
+# begin = 'https://maps.googleapis.com/maps/api/geocode/json?latlng='
+# end = '&key=AIzaSyCjn7gFXea2AhmAae51wIwseBZY4CKmscA'
+#
+# responses = []
+# for c in centers:
+#     url = begin + str(c[1]) + ',' + str(c[0]) + end
+#     responses.append(requests.post(url).json())
+#
+# cluster_locations = []
+# for i in range(len(responses)):
+#     jsonString = json.dumps(responses[i])  # convert json object to string
+#     jsontoPy = json.loads(jsonString)  # convert string to dictionary object
+#     cluster_locations.append({i + 1: jsontoPy['results'][0]['formatted_address']})
 
 # print(cluster_locations)
-
-predictedRDD.coalesce(1).saveAsTextFile("result.txt")
-
-text_file = sc.textFile("result.txt")
-counts = text_file.flatMap(lambda line: line.split(" ")) \
-             .map(lambda word: (word, 1)) \
-             .reduceByKey(lambda a, b: a + b)
-counts.saveAsTextFile("count.txt")
+# countsRDD = clustersWithArticles.map(lambda x: x.split(':*:'))
+#
+# text_file = sc.textFile("clustersWithText.txt")
+# counts = text_file.flatMap(lambda line: line.split(" ")) \
+#     .map(lambda word: (word, 1)) \
+#     .reduceByKey(lambda a, b: a + b)
+# counts.saveAsTextFile("count.txt")
